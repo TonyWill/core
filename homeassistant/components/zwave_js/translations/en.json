@@ -6,7 +6,8 @@
             "addon_install_failed": "Failed to install the Z-Wave JS add-on.",
             "addon_set_config_failed": "Failed to set Z-Wave JS configuration.",
             "already_configured": "Device is already configured",
-            "already_in_progress": "Configuration flow is already in progress"
+            "already_in_progress": "Configuration flow is already in progress",
+            "cannot_connect": "Failed to connect"
         },
         "error": {
             "addon_start_failed": "Failed to start the Z-Wave JS add-on. Check the configuration.",

@@ -39,11 +39,26 @@ async def validate_input(hass: core.HomeAssistant, user_input: dict) -> VersionI
     if not ws_address.startswith(("ws://", "wss://")):
         raise InvalidInput("invalid_ws_url")
 
+    try:
+        return await async_get_version_info(hass, ws_address)
+    except CannotConnect as err:
+        raise InvalidInput("cannot_connect") from err
+
+
+async def async_get_version_info(
+    hass: core.HomeAssistant, ws_address: str
+) -> VersionInfo:
+    """Return Z-Wave JS version info."""
     async with timeout(10):
         try:
-            return await get_server_version(ws_address, async_get_clientsession(hass))
+            version_info: VersionInfo = await get_server_version(
+                ws_address, async_get_clientsession(hass)
+            )
         except (asyncio.TimeoutError, aiohttp.ClientError) as err:
-            raise InvalidInput("cannot_connect") from err
+            _LOGGER.error("Failed to connect to Z-Wave JS server: %s", err)
+            raise CannotConnect from err
+
+    return version_info
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -113,14 +128,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         assert self.hass
         self.ws_address = f"ws://{discovery_info['host']}:{discovery_info['port']}"
-        async with timeout(10):
-            try:
-                version_info: VersionInfo = await get_server_version(
-                    self.ws_address, async_get_clientsession(self.hass)
-                )
-            except (asyncio.TimeoutError, aiohttp.ClientError) as err:
-                _LOGGER.error("Failed to connect to Z-Wave JS server: %s", err)
-                return self.async_abort(reason="cannot_connect")
+        try:
+            version_info = await async_get_version_info(self.hass, self.ws_address)
+        except CannotConnect:
+            return self.async_abort(reason="cannot_connect")
 
         await self.async_set_unique_id(version_info.home_id)
         self._abort_if_unique_id_configured()
@@ -165,11 +176,25 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.use_addon = True
 
         if await self._async_is_addon_running():
+            discovery_info = await self._async_get_addon_discovery_info()
+            self.ws_address = f"ws://{discovery_info['host']}:{discovery_info['port']}"
+
+            if not self.unique_id:
+                assert self.hass
+                try:
+                    version_info = await async_get_version_info(
+                        self.hass, self.ws_address
+                    )
+                except CannotConnect:
+                    return self.async_abort(reason="cannot_connect")
+                await self.async_set_unique_id(
+                    version_info.home_id, raise_on_progress=False
+                )
+
+            self._abort_if_unique_id_configured()
             addon_config = await self._async_get_addon_config()
             self.usb_path = addon_config[CONF_ADDON_DEVICE]
             self.network_key = addon_config.get(CONF_ADDON_NETWORK_KEY, "")
-            discovery_info = await self._async_get_addon_discovery_info()
-            self.ws_address = f"ws://{discovery_info['host']}:{discovery_info['port']}"
             return self._async_create_entry_from_vars()
 
         if await self._async_is_addon_installed():
@@ -237,6 +262,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self.ws_address = (
                     f"ws://{discovery_info['host']}:{discovery_info['port']}"
                 )
+
+                if not self.unique_id:
+                    try:
+                        version_info = await async_get_version_info(
+                            self.hass, self.ws_address
+                        )
+                    except CannotConnect:
+                        return self.async_abort(reason="cannot_connect")
+                    await self.async_set_unique_id(
+                        version_info.home_id, raise_on_progress=False
+                    )
+
+                self._abort_if_unique_id_configured()
                 return self._async_create_entry_from_vars()
 
         usb_path = self.addon_config.get(CONF_ADDON_DEVICE, self.usb_path or "")
@@ -325,6 +363,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         discovery_info_config: dict = discovery_info["config"]
         return discovery_info_config
+
+
+class CannotConnect(exceptions.HomeAssistantError):
+    """Indicate connection error."""
 
 
 class InvalidInput(exceptions.HomeAssistantError):
