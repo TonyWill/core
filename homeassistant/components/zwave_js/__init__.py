@@ -202,6 +202,6 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         LOGGER.error("Failed to stop the Z-Wave JS add-on: %s", err)
         return
     try:
-        await hass.components.hassio.async_uninstall_addon("core_zwave")
+        await hass.components.hassio.async_uninstall_addon("core_zwave_js")
     except HassioAPIError as err:
         LOGGER.error("Failed to uninstall the Z-Wave JS add-on: %s", err)
