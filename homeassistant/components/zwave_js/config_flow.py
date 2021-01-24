@@ -228,7 +228,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             assert self.hass
             try:
-                await self.hass.components.hassio.async_start_addon("core_zwave")
+                await self.hass.components.hassio.async_start_addon("core_zwave_js")
             except self.hass.components.hassio.HassioAPIError as err:
                 _LOGGER.error("Failed to start Z-Wave JS add-on: %s", err)
                 errors["base"] = "addon_start_failed"
@@ -260,7 +260,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         assert self.hass
         try:
             addon_info: dict = await self.hass.components.hassio.async_get_addon_info(
-                "core_zwave"
+                "core_zwave_js"
             )
         except self.hass.components.hassio.HassioAPIError as err:
             _LOGGER.error("Failed to get Z-Wave JS add-on info: %s", err)
@@ -289,7 +289,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         options = {"options": config}
         try:
             await self.hass.components.hassio.async_set_addon_options(
-                "core_zwave", options
+                "core_zwave_js", options
             )
         except self.hass.components.hassio.HassioAPIError as err:
             _LOGGER.error("Failed to set Z-Wave JS add-on config: %s", err)
@@ -299,7 +299,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Install the Z-Wave JS add-on."""
         assert self.hass
         try:
-            await self.hass.components.hassio.async_install_addon("core_zwave")
+            await self.hass.components.hassio.async_install_addon("core_zwave_js")
         finally:
             # Continue the flow after show progress when the task is done.
             self.hass.async_create_task(
