@@ -168,7 +168,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             addon_config = await self._async_get_addon_config()
             self.usb_path = addon_config[CONF_ADDON_DEVICE]
             self.network_key = addon_config.get(CONF_ADDON_NETWORK_KEY, "")
-            discovery_info = await self._get_addon_discovery_info()
+            discovery_info = await self._async_get_addon_discovery_info()
             self.ws_address = f"ws://{discovery_info['host']}:{discovery_info['port']}"
             return self._async_create_entry_from_vars()
 
@@ -233,7 +233,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.error("Failed to start Z-Wave JS add-on: %s", err)
                 errors["base"] = "addon_start_failed"
             else:
-                discovery_info = await self._get_addon_discovery_info()
+                discovery_info = await self._async_get_addon_discovery_info()
                 self.ws_address = (
                     f"ws://{discovery_info['host']}:{discovery_info['port']}"
                 )
@@ -306,7 +306,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self.hass.config_entries.flow.async_configure(flow_id=self.flow_id)
             )
 
-    async def _get_addon_discovery_info(self) -> dict:
+    async def _async_get_addon_discovery_info(self) -> dict:
         """Return add-on discovery info."""
         assert self.hass
         try:
