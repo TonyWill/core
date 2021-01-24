@@ -28,7 +28,7 @@ CONF_USB_PATH = "usb_path"
 DEFAULT_URL = "ws://localhost:3000"
 TITLE = "Z-Wave JS"
 
-ON_SUPERVISOR_SCHEMA = vol.Schema({vol.Optional(CONF_USE_ADDON, default=False): bool})
+ON_SUPERVISOR_SCHEMA = vol.Schema({vol.Optional(CONF_USE_ADDON, default=True): bool})
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_URL, default=DEFAULT_URL): str})
 
 
